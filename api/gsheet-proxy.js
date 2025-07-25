@@ -9,28 +9,39 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Check for matric existence
-  if (req.body && req.body.checkMatric && req.body.matric) {
-    // Forward the check to Google Apps Script with a special flag
-    const response = await fetch('https://script.google.com/macros/s/AKfycbwRqMKpNLfOMMfIiMTaIIaTdtHUiafWPcMCnEvlD-xqg7wxuxmnwExUzXHRj_VvDNvP/exec', {
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbwRqMKpNLfOMMfIiMTaIIaTdtHUiafWPcMCnEvlD-xqg7wxuxmnwExUzXHRj_VvDNvP/exec';
+
+  try {
+    // Check for matric existence
+    if (req.body && req.body.checkMatric && req.body.matric) {
+      const response = await fetch(scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkMatric: true, matric: req.body.matric }),
+      });
+      const data = await response.json();
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(200).json(data);
+      return;
+    }
+
+    // Normal quiz submission
+    const response = await fetch(scriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ checkMatric: true, matric: req.body.matric }),
+      body: JSON.stringify(req.body),
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json(data);
-    return;
+  } catch (error) {
+    console.error('Error:', error);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
-
-  // Normal quiz submission
-  const response = await fetch('https://script.google.com/macros/s/AKfycbwRqMKpNLfOMMfIiMTaIIaTdtHUiafWPcMCnEvlD-xqg7wxuxmnwExUzXHRj_VvDNvP/exec', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req.body),
-  });
-
-  const data = await response.text();
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.status(200).send(data);
-} 
+}
