@@ -6,7 +6,7 @@ const DEPARTMENTS = [
   'Software Engineering',
 ];
 
-const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwRqMKpNLfOMMfIiMTaIIaTdtHUiafWPcMCnEvlD-xqg7wxuxmnwExUzXHRj_VvDNvP/exec'; // <-- Replace with your Google Apps Script URL
+const WEBHOOK_URL = '/api/gsheet-proxy';
 
 const styles = {
   container: {
