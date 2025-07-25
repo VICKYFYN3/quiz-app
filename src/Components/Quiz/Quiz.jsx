@@ -28,7 +28,6 @@ const Quiz = ({ user, onLogout }) => {
         if (result) return;
         if (timeLeft <= 0) {
             setResult(true);
-            sendScoreToSheet(score);
             return;
         }
         const timer = setInterval(() => {
@@ -114,7 +113,6 @@ const Quiz = ({ user, onLogout }) => {
         if (lock === true) {
             if (index === data.length - 1) {
                 setResult(true);
-                sendScoreToSheet(score + (question.ans === undefined ? 0 : 0)); // Send score after quiz
                 return 0;
             }
             setIndex(++index);
