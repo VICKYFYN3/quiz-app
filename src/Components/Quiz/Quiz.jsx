@@ -1,13 +1,20 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import './Quiz.css'
 import { data } from './../../assets/data';
 
-const Quiz = ({ user }) => {
+const Quiz = ({ user, onLogout }) => {
     let [index, setIndex] = useState(0);
     let [question, setQuestion] = useState(data[index])
     let [lock, setLock] = useState(false);
     let [score, setScore] = useState(0);
     let [result, setResult] = useState(false);
+
+    // Timer state
+    const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
+    // Page leave detection
+    const [leaveCount, setLeaveCount] = useState(0);
+    const [showWarning, setShowWarning] = useState(false);
+    const leaveTimeout = useRef(null);
 
     let Option1 = useRef(null);
     let Option2 = useRef(null);
@@ -16,6 +23,62 @@ const Quiz = ({ user }) => {
 
     let option_array = [Option1, Option2, Option3, Option4];
 
+    // Timer effect
+    useEffect(() => {
+        if (result) return;
+        if (timeLeft <= 0) {
+            setResult(true);
+            sendScoreToSheet(score);
+            return;
+        }
+        const timer = setInterval(() => {
+            setTimeLeft((t) => t - 1);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft, result]);
+
+    // Format timer mm:ss
+    const formatTime = (secs) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = (secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+
+    // Page leave detection
+    useEffect(() => {
+        const handleBlur = () => {
+            if (result) return;
+            leaveTimeout.current = setTimeout(() => {
+                setShowWarning(true);
+                setLeaveCount((c) => c + 1);
+            }, 10000); // 10 seconds
+        };
+        const handleFocus = () => {
+            clearTimeout(leaveTimeout.current);
+        };
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+            clearTimeout(leaveTimeout.current);
+        };
+    }, [result]);
+
+    // Log out if user leaves page twice
+    useEffect(() => {
+        if (leaveCount >= 2) {
+            onLogout && onLogout();
+        }
+    }, [leaveCount, onLogout]);
+
+    // Hide warning after 3 seconds
+    useEffect(() => {
+        if (showWarning) {
+            const t = setTimeout(() => setShowWarning(false), 3000);
+            return () => clearTimeout(t);
+        }
+    }, [showWarning]);
 
     const checkAnswer = (e, ans) => {
         if (lock === false) {
@@ -63,25 +126,30 @@ const Quiz = ({ user }) => {
             });
         }
     }
-    const reset = () => {
-        setIndex(0);
-        setQuestion(data[0]);
-        setLock(false);
-        setScore(0);
-        setResult(false);
-        option_array.map(option => {
-            option.current.classList.remove("correct", "wrong");
-            return null;
-        });
-    }
+    // Remove reset, add submit (logout)
+    const [submitting, setSubmitting] = useState(false);
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        await sendScoreToSheet(score);
+        setSubmitting(false);
+        onLogout && onLogout();
+    };
     return (
         <div className='container'>
             <h1>Quiz App</h1>
             <hr />
+            <div style={{textAlign:'right', fontWeight:'bold', fontSize:'18px', color: timeLeft < 60 ? 'red' : '#222'}}>
+                Time Left: {formatTime(timeLeft)}
+            </div>
+            {showWarning && (
+                <div style={{color:'orange', fontWeight:'bold', margin:'10px 0'}}>Warning: Do not leave the page during the quiz!</div>
+            )}
             {result ? 
             <> 
                 <h2>You Scored {score} out of {data.length}</h2>
-                <button onClick={reset}>Reset</button>
+                <button onClick={handleSubmit} disabled={submitting}>
+                  {submitting ? 'Submitting...' : 'Submit'}
+                </button>
             </>: 
             <>
                 <h2>{index + 1}. {question.question} </h2>

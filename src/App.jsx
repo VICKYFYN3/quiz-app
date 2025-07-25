@@ -10,7 +10,7 @@ const App = () => {
       {!user ? (
         <WelcomeForm onSubmit={setUser} />
       ) : (
-        <Quiz user={user} />
+        <Quiz user={user} onLogout={() => setUser(null)} />
       )}
     </>
   );

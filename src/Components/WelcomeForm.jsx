@@ -86,23 +86,13 @@ const WelcomeForm = ({ onSubmit }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, score: 0 }),
-      });
-      if (!response.ok) throw new Error('Failed to submit');
-      onSubmit(form); // Pass user details up
-    } catch (err) {
-      setError('Submission failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    // Only pass user details up, do not POST here
+    onSubmit(form);
+    setLoading(false);
   };
 
   return (
