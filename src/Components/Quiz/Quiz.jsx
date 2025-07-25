@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react'
 import './Quiz.css'
 import { data } from './../../assets/data';
 
-const Quiz = () => {
+const Quiz = ({ user }) => {
     let [index, setIndex] = useState(0);
     let [question, setQuestion] = useState(data[index])
     let [lock, setLock] = useState(false);
@@ -31,10 +31,27 @@ const Quiz = () => {
         }
     }
 
+    const sendScoreToSheet = async (score) => {
+        const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwRqMKpNLfOMMfIiMTaIIaTdtHUiafWPcMCnEvlD-xqg7wxuxmnwExUzXHRj_VvDNvP/exec'; // <-- Replace with your Google Apps Script URL
+        try {
+            await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...user,
+                    score,
+                }),
+            });
+        } catch (err) {
+            // Optionally handle error
+        }
+    };
+
     const next = () => {
         if (lock === true) {
             if (index === data.length - 1) {
                 setResult(true);
+                sendScoreToSheet(score + (question.ans === undefined ? 0 : 0)); // Send score after quiz
                 return 0;
             }
             setIndex(++index);
