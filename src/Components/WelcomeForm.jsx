@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const DEPARTMENTS = [
   'Computer Science',
@@ -86,17 +88,39 @@ const WelcomeForm = ({ onSubmit }) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  // Check if matric exists in Google Sheet
+  const checkMatricExists = async (matric) => {
+    try {
+      const response = await fetch('/api/gsheet-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkMatric: true, matric }),
+      });
+      const data = await response.json();
+      return data.exists;
+    } catch (err) {
+      return false; // fallback: allow if error
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    // Only pass user details up, do not POST here
+    // Check for duplicate matric
+    const exists = await checkMatricExists(form.matric);
+    if (exists) {
+      toast.error('You have already taken the quiz.');
+      setLoading(false);
+      return;
+    }
     onSubmit(form);
     setLoading(false);
   };
 
   return (
     <div style={styles.container}>
+      <ToastContainer position="top-center" />
       <h2 style={{ marginBottom: 24, color: '#222' }}>Welcome to the Quiz!</h2>
       <form onSubmit={handleSubmit} style={styles.form} autoComplete="off">
         <div>
@@ -138,7 +162,7 @@ const WelcomeForm = ({ onSubmit }) => {
           </select>
         </div>
         <button type="submit" style={styles.button} disabled={loading}>
-          {loading ? 'Submitting...' : 'Start Quiz'}
+          {loading ? 'Checking...' : 'Start Quiz'}
         </button>
         {error && <div style={styles.error}>{error}</div>}
       </form>

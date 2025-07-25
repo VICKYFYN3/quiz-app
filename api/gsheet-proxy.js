@@ -1,3 +1,5 @@
+import { google } from 'googleapis';
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -7,6 +9,21 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Check for matric existence
+  if (req.body && req.body.checkMatric && req.body.matric) {
+    // Forward the check to Google Apps Script with a special flag
+    const response = await fetch('https://script.google.com/macros/s/AKfycbwRqMKpNLfOMMfIiMTaIIaTdtHUiafWPcMCnEvlD-xqg7wxuxmnwExUzXHRj_VvDNvP/exec', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checkMatric: true, matric: req.body.matric }),
+    });
+    const data = await response.json();
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.status(200).json(data);
+    return;
+  }
+
+  // Normal quiz submission
   const response = await fetch('https://script.google.com/macros/s/AKfycbwRqMKpNLfOMMfIiMTaIIaTdtHUiafWPcMCnEvlD-xqg7wxuxmnwExUzXHRj_VvDNvP/exec', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
